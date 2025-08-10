@@ -1,103 +1,95 @@
-import Image from "next/image";
+// src/app/page.tsx
+'use client'
 
-export default function Home() {
+import { motion } from 'framer-motion'
+
+export default function Page() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <section className="relative overflow-hidden rounded-2xl border border-base-border bg-black">
+      <div className="h-14 border-b border-base-border flex items-center px-6">
+        <div className="font-semibold">Toko Buku & Kopi Terang</div>
+      </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      <div className="relative grid lg:grid-cols-12 gap-8 px-6 py-8 sm:py-10 lg:py-16 items-center">
+        {/* left */}
+        <motion.div
+          className="lg:col-span-3 flex flex-col gap-4"
+          initial={{ opacity: 0, x: -12 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.25 }}
+        >
+          <div className="flex items-center gap-2">
+            <span className="inline-block h-3 w-3 rounded-full" style={{ background: '#FFD166' }} />
+            <span className="inline-block h-3 w-3 rounded-full" style={{ background: '#F0822F' }} />
+          </div>
+          <p className="text-base-muted max-w-xs text-sm leading-relaxed">
+            Elevate kopi harianmu. Racikan kami disusun untuk penikmat rasa yang tenang—tanpa gimmick.
+          </p>
+          <a href="/events" className="text-sm underline underline-offset-4">Learn More ↗</a>
+
+          <motion.div
+            className="mt-10 w-32 h-32 sm:w-40 sm:h-40 grid place-items-center ring-dashed"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.05 }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
+            <div className="text-xs text-base-muted text-center leading-snug px-4">
+              Discover<br/>the perfect brew
+            </div>
+          </motion.div>
+        </motion.div>
+
+        {/* middle image via background cover */}
+        <motion.div
+          className="lg:col-span-6"
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <figure
+            className="w-full rounded-2xl border border-base-border shadow-soft
+                       bg-center bg-cover
+                       aspect-[4/5] sm:aspect-[3/4] md:aspect-[4/3] lg:aspect-[16/10]"
+            style={{ backgroundImage: 'url("/DSC00853-Enhanced-NR.jpg")' }}
+            aria-label="Hero image"
+          />
+        </motion.div>
+
+        {/* right */}
+        <motion.div
+          className="lg:col-span-3 flex flex-col items-start gap-5"
+          initial={{ opacity: 0, x: 12 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.25 }}
+        >
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold leading-tight">
+            Indulge in the<br />Irresistible World<br />of <span className="headline-gradient">Coffee Delights</span>
+          </h1>
+          <a href="/books" className="btn bg-[#F0822F] text-black hover:opacity-90 border-0">
+            Buy Now →
           </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+
+          <div className="flex items-center gap-3">
+            <div className="flex -space-x-2">
+              <div className="h-7 w-7 rounded-full bg-white" />
+              <div className="h-7 w-7 rounded-full bg-white/80" />
+              <div className="h-7 w-7 rounded-full bg-white/60" />
+              <div className="h-7 w-7 rounded-full bg-white/40" />
+            </div>
+            <div className="text-sm text-base-muted">37k well reviews</div>
+          </div>
+          <div className="flex gap-1 text-[#F0822F]" aria-label="rating">
+            <span>★</span><span>★</span><span>★</span><span>★</span><span className="text-base-muted">★</span>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* watermark (hide on mobile via .hero-watermark) */}
+      <div className="hero-watermark pointer-events-none absolute -bottom-6 left-6 right-6">
+        <div className="text-outline text-[12vw] leading-none font-extrabold uppercase tracking-tight">
+          Terang Coffee
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+      </div>
+    </section>
+  )
 }
