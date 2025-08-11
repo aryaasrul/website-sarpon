@@ -11,9 +11,25 @@ export default function Page() {
       </div>
 
       <div className="relative grid lg:grid-cols-12 gap-8 px-6 py-8 sm:py-10 lg:py-16 items-center min-h-[600px]">
+        {/* FULL BACKGROUND HERO IMAGE - FULL COVERAGE */}
+        <div className="absolute inset-0">
+          <div
+            className="w-full h-full"
+            style={{ 
+              backgroundImage: 'url("/DSC00853-Enhanced-NR.jpg")',
+              backgroundPosition: 'center center',
+              backgroundRepeat: 'no-repeat',
+              backgroundSize: 'cover'
+            }}
+          >
+            {/* Dark overlay untuk readability text */}
+            <div className="absolute inset-0 bg-black/50" />
+          </div>
+        </div>
+
         {/* left content */}
         <motion.div
-          className="lg:col-span-3 flex flex-col gap-4 z-10"
+          className="lg:col-span-3 flex flex-col gap-4 z-10 relative"
           initial={{ opacity: 0, x: -12 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.25 }}
@@ -22,10 +38,10 @@ export default function Page() {
             <span className="inline-block h-3 w-3 rounded-full" style={{ background: '#FFD166' }} />
             <span className="inline-block h-3 w-3 rounded-full" style={{ background: '#F0822F' }} />
           </div>
-          <p className="text-base-muted max-w-xs text-sm leading-relaxed">
-            Elevate kopi harianmu. Racikan kami disusun untuk penikmat rasa yang tenang—tanpa gimmick.
+          <p className="text-white max-w-xs text-sm leading-relaxed">
+            Buku & Kopi, Teman Sejati.
           </p>
-          <a href="/events" className="text-sm underline underline-offset-4">Learn More ↗</a>
+          <a href="/coffee" className="text-sm underline underline-offset-4 text-white/80 hover:text-white">Check Our Line Up ↗</a>
 
           {/* Circular Badge - Animated */}
           <motion.div
@@ -79,37 +95,20 @@ export default function Page() {
           </motion.div>
         </motion.div>
 
-        {/* Full background hero image */}
-        <motion.div
-          className="lg:col-span-6 absolute inset-0 lg:relative lg:inset-auto"
-          initial={{ opacity: 0, scale: 1.05 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6 }}
-        >
-          <div
-            className="w-full h-full bg-center bg-cover rounded-2xl lg:rounded-none"
-            style={{ 
-              backgroundImage: 'url("/DSC00853-Enhanced-NR.jpg")',
-              backgroundPosition: 'center center'
-            }}
-          >
-            {/* Overlay gradient for better text readability */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent lg:hidden" />
-            <div className="hidden lg:block absolute inset-0 bg-gradient-to-r from-black via-transparent to-black/60" />
-          </div>
-        </motion.div>
+        {/* middle space - no content, just spacing */}
+        <div className="lg:col-span-6"></div>
 
         {/* right content */}
         <motion.div
-          className="lg:col-span-3 flex flex-col items-start gap-5 z-10 lg:pl-4"
+          className="lg:col-span-3 flex flex-col items-start gap-5 z-10 relative"
           initial={{ opacity: 0, x: 12 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.25, delay: 0.1 }}
         >
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold leading-tight text-white">
-            Indulge in the<br />
-            <span className="text-[#F0822F]">Irresistible</span><br />
-            World of <span className="headline-gradient">Coffee Delights</span>
+            Seteguk kopi, selembar cerita<br />
+            <span className="text-[#F0822F]">Dua dunia</span><br />
+            Dalam satu <span className="headline-gradient">Waktu</span>
           </h1>
           
           <motion.a 
@@ -118,7 +117,7 @@ export default function Page() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            Buy Now →
+            Explore →
           </motion.a>
 
           {/* Reviews section */}
@@ -147,7 +146,7 @@ export default function Page() {
                 />
               ))}
             </div>
-            <div className="text-sm text-base-muted">37k well reviews</div>
+            <div className="text-sm text-white/70">37k well reviews</div>
           </motion.div>
           
           <motion.div 
@@ -167,12 +166,14 @@ export default function Page() {
                 ★
               </motion.span>
             ))}
-            <span className="text-base-muted">★</span>
+            <span className="text-white/40">★</span>
           </motion.div>
         </motion.div>
       </div>
 
-      {/* watermark (hide on mobile) */}
+      {/* WATERMARK DIHILANGKAN - INI YANG BIKIN WARNA KUNING! */}
+      {/* Kalau mau watermark, uncomment code di bawah */}
+      {/* 
       <motion.div 
         className="hero-watermark pointer-events-none absolute -bottom-6 left-6 right-6 z-0"
         initial={{ opacity: 0 }}
@@ -194,6 +195,7 @@ export default function Page() {
           Terang Coffee
         </motion.div>
       </motion.div>
+      */}
     </section>
   )
 }

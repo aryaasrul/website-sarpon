@@ -12,9 +12,9 @@ type Team = {
 }
 
 const TEAM: Team[] = [
-  { name: 'A. Zakaria', role: 'Owner / Roaster', photo: '/team/zakaria.jpg', bio: 'Ngoprek rasa, jaga konsistensi, anti gimmick.' },
-  { name: 'R. Partner', role: 'Head Barista', photo: '/team/partner.jpg', bio: 'Eksekusi resep rapi, service santai tapi sigap.' },
-  { name: 'M. Crew', role: 'Books Curator', photo: '/team/crew.jpg', bio: 'Kurasi buku yang bikin mikir, bukan sekadar ramai.' },
+  { name: 'Syafira', role: 'Conceptor', photo: '/team/60D62A14-6A64-4E80-B931-743720185577.PNG', bio: 'Tata Ruang, Tata Tampilan' },
+  { name: 'Arya', role: 'Curator', photo: '/team/904C342B-A0DA-4FD7-8671-00741720C42A.PNG', bio: 'Kurasi buku, Kurasi kopi.' },
+  { name: 'Naufal', role: 'Executor', photo: '/team/D8959784-EAE9-45C1-88B6-A94CB3C33166.PNG', bio: 'Eksekusi rapi, Service sigap.' },
 ]
 
 // Variants animasi
@@ -37,16 +37,18 @@ export default function TentangKamiPage() {
       >
         <h1 className="text-2xl font-semibold mb-2">Tentang Kami</h1>
         <p className="text-base-muted text-sm">
-          Toko Buku & Kopi Terang adalah ruang tenang untuk dua hal sederhana: kopi yang konsisten dan bacaan yang
-          jujur. Hitam–putih, tanpa gimmick. Kami percaya rasa yang rapi dan kurasi buku yang tepat bisa bikin kepala
-          lebih terang.
+          Toko Buku & Kopi Terang adalah salah satu cabang dari Toko Buku & Kitab Terang yang berdiri sejak 1983.
+          Kami memperbarui konsep karena sadar bahwa minat baca dan minum kopi adalah pasangan yang saling melengkapi.
+          Kopi menjaga tempo, buku menjaga arah.
+          Di sini, kami merawat keduanya—memberikan ruang tenang, rasa yang konsisten, dan kurasi bacaan yang jujur.
+          Kami percaya tempat yang baik adalah yang membuat kepala lebih TERANG.
         </p>
 
         <div className="mt-4 grid sm:grid-cols-3 gap-3">
           {[
-            { k: 'Fokus', v: 'Kopi konsisten, kurasi buku, obrolan tenang.' },
-            { k: 'Gaya', v: 'Minimalis, fungsional, warna hitam–putih.' },
-            { k: 'Komitmen', v: 'Rasa jujur, servis rapi, harga masuk akal.' },
+            { k: 'Komitmen', v: 'Melestarikan minat baca melalui kurasi buku, diskusi, dan rak yang selalu hidup' },
+            { k: 'Konsisten', v: 'Menjaga rasa kopi yang jujur lewat resep terukur dan proses yang rapi.' },
+            { k: 'Adaptif', v: 'Terbuka pada metode baru, kolaborasi, dan perubahan kebutuhan pembaca dan penikmat kopi di masa depan' },
           ].map((it, i) => (
             <motion.div
               key={it.k}
@@ -95,10 +97,6 @@ export default function TentangKamiPage() {
             </motion.article>
           ))}
         </div>
-
-        <div className="text-xs text-base-muted mt-3">
-          *Foto tim placeholder. Taruh file di <code>/public/team/</code> sesuai nama pada data di atas.
-        </div>
       </motion.section>
 
       {/* Kontak */}
@@ -124,20 +122,20 @@ export default function TentangKamiPage() {
               <div className="font-medium">Alamat</div>
             </div>
             <p className="text-sm text-base-muted mt-1">
-              (Isi alamatmu di sini) · Ponorogo
+              Jl. Batoro Katong, Komplek pertokoan pasarpon · Ponorogo
             </p>
 
             <div className="flex items-center gap-2 mt-4">
               <Phone size={16} className="text-base-muted" />
               <div className="font-medium">Telepon</div>
             </div>
-            <p className="text-sm text-base-muted mt-1">08xx-xxxx-xxxx</p>
+            <p className="text-sm text-base-muted mt-1">0851-6166-0183</p>
 
             <div className="flex items-center gap-2 mt-4">
               <Mail size={16} className="text-base-muted" />
               <div className="font-medium">Email</div>
             </div>
-            <p className="text-sm text-base-muted mt-1">halo@tokoterang.id</p>
+            <p className="text-sm text-base-muted mt-1">tokoterang83@gmail.com</p>
           </motion.div>
 
           {/* Jam Buka */}
@@ -148,8 +146,7 @@ export default function TentangKamiPage() {
           >
             <div className="font-medium">Jam Buka</div>
             <ul className="text-sm text-base-muted mt-2 space-y-1">
-              <li>Sen–Sab: 10.00 – 22.00</li>
-              <li>Minggu: Tutup</li>
+              <li>Sen–Min: 17.00 – 00.00</li>
             </ul>
             <div className="text-xs text-base-muted mt-3">*Jam fleksibel saat event.</div>
           </motion.div>
@@ -162,13 +159,13 @@ export default function TentangKamiPage() {
           >
             <div className="font-medium">Sosial</div>
             <div className="flex flex-col gap-2 mt-2 text-sm">
-              <a className="navlink inline-flex items-center gap-2" href="#" aria-label="Instagram">
+              <a className="navlink inline-flex items-center gap-2" href="https://www.instagram.com/tokobukudankopi.terang/" aria-label="Instagram">
                 <Instagram size={16} /> Instagram
               </a>
               <a className="navlink inline-flex items-center gap-2" href="#" aria-label="WhatsApp">
                 <MessageCircle size={16} /> WhatsApp
               </a>
-              <a className="navlink inline-flex items-center gap-2" href="mailto:halo@tokoterang.id" aria-label="Email">
+              <a className="navlink inline-flex items-center gap-2" href="mailto:tokoterang83@gmail.com" aria-label="Email">
                 <Mail size={16} /> Email
               </a>
             </div>
@@ -189,9 +186,7 @@ export default function TentangKamiPage() {
           />
         </motion.div>
 
-        <div className="text-xs text-base-muted mt-2">
-          *Ganti <code>/map-placeholder.jpg</code> dengan embed peta atau screenshot peta lokasi kedai.
-        </div>
+        
       </motion.section>
     </motion.div>
   )
