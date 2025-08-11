@@ -1,73 +1,125 @@
+// src/app/events/page.tsx
 'use client'
 
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-
-type EventItem = {
-  id: string
-  title: string
-  date: string
-  location: string
-  is_online: boolean
-  rsvp_url?: string
-  cover: string
-  desc: string
-}
-
-const EVENTS: EventItem[] = [
-  { id:'e1', title:'Bedah Buku Kopi', date:new Date(Date.now()+7*86400000).toISOString(), location:'Kedai Terang', is_online:false, cover:'/events/bedah-buku.jpg', desc:'Diskusi santai soal buku kopi.' },
-  { id:'e2', title:'Ngopi & Ngoding', date:new Date(Date.now()+14*86400000).toISOString(), location:'Online', is_online:true, rsvp_url:'#', cover:'/events/ngopi-ngoding.jpg', desc:'Sesi pair-coding ringan.' },
-  { id:'e3', title:'Cupping: Single Origin', date:new Date(Date.now()+21*86400000).toISOString(), location:'Kedai Terang', is_online:false, cover:'/events/cupping.jpg', desc:'Bandingkan beberapa origin.' },
-]
+import { useEvents } from '@/hooks'
+import { LoadingCard, ErrorMessage } from '@/components/LoadingSpinner'
+import type { Event } from '@/lib/types'
 
 export default function EventsPage() {
+  const { data: events, loading, error, refetch } = useEvents()
   const [q, setQ] = useState('')
-  const [selected, setSelected] = useState<EventItem | null>(null)
+  const [selected, setSelected] = useState<Event | null>(null)
 
-  const data = useMemo(
-    () =>
-      EVENTS.filter(e => (q ? (e.title + ' ' + e.location).toLowerCase().includes(q.toLowerCase()) : true))
-        .sort((a,b)=>+new Date(a.date)-+new Date(b.date)),
-    [q]
-  )
+  // Filter and sort events
+  const filteredEvents = useMemo(() => {
+    if (!events) return []
+    
+    const filtered = events.filter(event => 
+      q ? (event.title + ' ' + event.location).toLowerCase().includes(q.toLowerCase()) : true
+    )
+    
+    // Sort by date (upcoming first)
+    return filtered.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  }, [events, q])
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString('id-ID', {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    })
+  }
+
+  // Check if event is past
+  const isPastEvent = (dateString: string) => {
+    return new Date(dateString) < new Date()
+  }
+
+  if (loading) {
+    return <LoadingCard text="Memuat daftar event..." />
+  }
+
+  if (error) {
+    return <ErrorMessage error={error} onRetry={refetch} />
+  }
 
   return (
     <div className="grid gap-4">
+      {/* Search */}
       <div className="card grid sm:grid-cols-[1fr_auto] gap-3">
-        <input className="input" placeholder="Cari event / lokasi" value={q} onChange={(e)=>setQ(e.target.value)} />
-        <div className="flex items-center text-sm text-base-muted">Total: {data.length}</div>
+        <input 
+          className="input" 
+          placeholder="Cari event atau lokasi" 
+          value={q} 
+          onChange={(e) => setQ(e.target.value)} 
+        />
+        <div className="flex items-center text-sm text-base-muted">
+          Total: {filteredEvents.length}
+        </div>
       </div>
 
-      {data.length === 0 ? (
-        <div className="card">Belum ada event.</div>
+      {/* Events Grid */}
+      {filteredEvents.length === 0 ? (
+        <div className="card">
+          {q ? 'Tidak ada event yang sesuai dengan pencarian.' : 'Belum ada event yang dijadwalkan.'}
+        </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data.map((ev, idx) => (
+          {filteredEvents.map((event, idx) => (
             <motion.article
-              key={ev.id}
-              className="card p-0 overflow-hidden hover:shadow-soft transition-shadow cursor-pointer"
-              onClick={() => setSelected(ev)}
+              key={event.id}
+              className={`card p-0 overflow-hidden hover:shadow-soft transition-shadow cursor-pointer ${
+                isPastEvent(event.date) ? 'opacity-60' : ''
+              }`}
+              onClick={() => setSelected(event)}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2, delay: idx * 0.03 }}
             >
-              <img src={ev.cover} alt={ev.title} className="w-full h-40 object-cover" loading="lazy" />
-              <div className="p-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium">{ev.title}</h3>
-                  {ev.is_online ? <span className="badge">Online</span> : <span className="badge">Offline</span>}
+              {event.cover_url ? (
+                <img 
+                  src={event.cover_url} 
+                  alt={event.title} 
+                  className="w-full h-40 object-cover" 
+                  loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none'
+                  }}
+                />
+              ) : (
+                <div className="w-full h-40 bg-base-border flex items-center justify-center">
+                  <span className="text-base-muted text-sm">No Image</span>
                 </div>
-                <p className="text-base-muted text-sm mt-1">
-                  {new Date(ev.date).toLocaleString('id-ID', { dateStyle:'medium', timeStyle:'short' })} · {ev.location}
+              )}
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-medium">{event.title}</h3>
+                  <div className="flex gap-1">
+                    {event.is_online ? (
+                      <span className="badge">Online</span>
+                    ) : (
+                      <span className="badge">Offline</span>
+                    )}
+                    {isPastEvent(event.date) && (
+                      <span className="badge">Selesai</span>
+                    )}
+                  </div>
+                </div>
+                <p className="text-base-muted text-sm">
+                  {formatDate(event.date)} · {event.location}
                 </p>
-                <p className="text-sm mt-2 line-clamp-2">{ev.desc}</p>
+                {event.description && (
+                  <p className="text-sm mt-2 line-clamp-2">{event.description}</p>
+                )}
               </div>
             </motion.article>
           ))}
         </div>
       )}
 
-      {/* Modal */}
+      {/* Event Detail Modal */}
       <AnimatePresence>
         {selected && (
           <motion.div
@@ -92,21 +144,60 @@ export default function EventsPage() {
             >
               <div className="flex items-center justify-between border-b border-base-border px-5 h-12">
                 <div className="font-medium">{selected.title}</div>
-                <button className="navlink" onClick={() => setSelected(null)} aria-label="Tutup">✕</button>
+                <button 
+                  className="navlink" 
+                  onClick={() => setSelected(null)} 
+                  aria-label="Tutup"
+                >
+                  ✕
+                </button>
               </div>
               <div className="p-5 grid gap-4">
-                <img src={selected.cover} alt={selected.title} className="w-full h-56 object-cover rounded-xl" />
-                <div className="flex items-center gap-2">
-                  {selected.is_online ? <span className="badge">Online</span> : <span className="badge">Offline</span>}
+                {selected.cover_url && (
+                  <img 
+                    src={selected.cover_url} 
+                    alt={selected.title} 
+                    className="w-full h-56 object-cover rounded-xl" 
+                  />
+                )}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {selected.is_online ? (
+                    <span className="badge">Online</span>
+                  ) : (
+                    <span className="badge">Offline</span>
+                  )}
                   <span className="badge">
-                    {new Date(selected.date).toLocaleString('id-ID', { dateStyle:'medium', timeStyle:'short' })}
+                    {formatDate(selected.date)}
                   </span>
+                  {selected.status && selected.status !== 'scheduled' && (
+                    <span className="badge">
+                      {selected.status === 'cancelled' ? 'Dibatalkan' : 'Selesai'}
+                    </span>
+                  )}
+                  {isPastEvent(selected.date) && (
+                    <span className="badge">Event Selesai</span>
+                  )}
                 </div>
-                <p className="text-sm text-base-muted">{selected.location}</p>
-                <p className="text-sm">{selected.desc}</p>
+                <p className="text-sm text-base-muted">
+                  <strong>Lokasi:</strong> {selected.location}
+                </p>
+                {selected.description && (
+                  <p className="text-sm">{selected.description}</p>
+                )}
                 <div className="flex items-center gap-3">
-                  {selected.rsvp_url && <a className="btn" href={selected.rsvp_url}>RSVP</a>}
-                  <button className="btn" onClick={() => setSelected(null)}>Tutup</button>
+                  {selected.rsvp_url && !isPastEvent(selected.date) && (
+                    <a 
+                      className="btn" 
+                      href={selected.rsvp_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      RSVP
+                    </a>
+                  )}
+                  <button className="btn" onClick={() => setSelected(null)}>
+                    Tutup
+                  </button>
                 </div>
               </div>
             </motion.div>

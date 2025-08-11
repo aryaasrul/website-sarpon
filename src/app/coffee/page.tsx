@@ -1,58 +1,44 @@
 // src/app/coffee/page.tsx
 'use client'
 
+import { useMemo } from 'react'
 import { motion } from 'framer-motion'
+import { useMenu, useBeans } from '@/hooks'
+import { LoadingCard, ErrorMessage } from '@/components/LoadingSpinner'
+import type { MenuItem, Bean, MenuGroup } from '@/lib/types'
 
-type Item = {
-  name: string
-  desc?: string
-  price: string
-  badge?: string
+// Group menu items by category
+function useMenuByGroup(menuItems: MenuItem[]) {
+  return useMemo(() => {
+    const grouped = menuItems.reduce((acc, item) => {
+      if (!acc[item.group]) acc[item.group] = []
+      acc[item.group].push(item)
+      return acc
+    }, {} as Record<MenuGroup, MenuItem[]>)
+
+    // Sort each group by sort_order
+    Object.keys(grouped).forEach(group => {
+      grouped[group as MenuGroup].sort((a, b) => a.sort_order - b.sort_order)
+    })
+
+    return grouped
+  }, [menuItems])
 }
 
-type Bean = {
-  name: string
-  origin: string
-  process?: string
-  notes: string
-  photo?: string // optional: /public/beans/xxx.jpg
+// Format price for display
+const formatPrice = (price: number) => {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(price)
 }
 
-const signature: Item[] = [
-  { name: 'Magic Coffee', desc: 'Base espresso, creamy, low acid', price: '25K', badge: 'Signature' },
-  { name: 'Azure Tonic', desc: 'Espresso + tonic, segar & crisp', price: '28K' },
-]
+// Menu section component
+function MenuSection({ title, items }: { title: string; items: MenuItem[] }) {
+  const fadeUp = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } }
 
-const espresso: Item[] = [
-  { name: 'Espresso', price: '18K' },
-  { name: 'Americano', price: '20K' },
-  { name: 'Latte', price: '24K' },
-  { name: 'Cappuccino', price: '24K' },
-  { name: 'Flat White', price: '24K' },
-]
-
-const manualBrew: Item[] = [
-  { name: 'V60', desc: 'Single origin, clean cup', price: '26K' },
-  { name: 'Kalita', price: '26K' },
-]
-
-const nonCoffee: Item[] = [
-  { name: 'Chocolate', price: '22K' },
-  { name: 'Oat Cocoa', price: '26K' },
-  { name: 'Tea (Hot/Cold)', price: '18K' },
-]
-
-// Line Up Beans (contoh)
-const beans: Bean[] = [
-  { name: 'Gayo Atu Lintang', origin: 'Aceh, Indonesia', process: 'Washed', notes: 'Cokelat, herbal, hint spice' },
-  { name: 'Kintamani Natural', origin: 'Bali, Indonesia', process: 'Natural', notes: 'Red berries, gula aren, floral' },
-  { name: 'Colombia Huila', origin: 'Huila, Colombia', process: 'Washed', notes: 'Citrus, caramel, clean finish' },
-]
-
-// Variants animasi
-const fadeUp = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } }
-
-function Section({ title, items }: { title: string; items: Item[] }) {
   return (
     <motion.section
       className="card"
@@ -63,16 +49,20 @@ function Section({ title, items }: { title: string; items: Item[] }) {
         <h2 className="text-xl">{title}</h2>
       </div>
       <ul className="divide-y divide-base-border">
-        {items.map((it) => (
-          <li key={it.name} className="py-3 flex items-start justify-between gap-6">
+        {items.map((item) => (
+          <li key={item.id} className="py-3 flex items-start justify-between gap-6">
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-medium">{it.name}</h3>
-                {it.badge && <span className="badge">{it.badge}</span>}
+                <h3 className="font-medium">{item.name}</h3>
+                {item.badge && <span className="badge">{item.badge}</span>}
               </div>
-              {it.desc && <p className="text-sm text-base-muted mt-1">{it.desc}</p>}
+              {item.description && (
+                <p className="text-sm text-base-muted mt-1">{item.description}</p>
+              )}
             </div>
-            <div className="shrink-0 text-sm">{it.price}</div>
+            <div className="shrink-0 text-sm font-medium">
+              {formatPrice(item.price)}
+            </div>
           </li>
         ))}
       </ul>
@@ -80,7 +70,10 @@ function Section({ title, items }: { title: string; items: Item[] }) {
   )
 }
 
-function BeansSection({ list }: { list: Bean[] }) {
+// Beans section component
+function BeansSection({ beans }: { beans: Bean[] }) {
+  const fadeUp = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } }
+
   return (
     <motion.section
       className="card"
@@ -93,36 +86,68 @@ function BeansSection({ list }: { list: Bean[] }) {
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {list.map((b, i) => (
+        {beans.map((bean, i) => (
           <motion.article
-            key={b.name}
+            key={bean.id}
             className="rounded-2xl border border-base-border p-4"
             initial={{ opacity: 0, scale: 0.98 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true, amount: 0.2 }}
             transition={{ duration: 0.22, delay: i * 0.03 }}
           >
-            {b.photo && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={b.photo} alt={b.name} className="w-full h-36 object-cover rounded-xl mb-3" />
+            {bean.photo_url && (
+              <img 
+                src={bean.photo_url} 
+                alt={bean.name} 
+                className="w-full h-36 object-cover rounded-xl mb-3"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none'
+                }}
+              />
             )}
             <div className="flex items-start justify-between gap-3">
-              <h3 className="font-medium">{b.name}</h3>
+              <h3 className="font-medium">{bean.name}</h3>
+              {bean.roast && (
+                <span className="badge text-xs">{bean.roast}</span>
+              )}
             </div>
-            <p className="text-sm text-base-muted mt-1">{b.origin}{b.process ? ` · ${b.process}` : ''}</p>
-            <p className="text-sm mt-2">{b.notes}</p>
+            <p className="text-sm text-base-muted mt-1">
+              {bean.origin}
+              {bean.process && ` · ${bean.process}`}
+            </p>
+            <p className="text-sm mt-2">{bean.notes}</p>
           </motion.article>
         ))}
       </div>
 
-      <div className="text-xs text-base-muted mt-4">
-        Catatan: Profil roast bisa berubah per batch. Tanyakan barista untuk rekomendasi seduh.
-      </div>
+      {beans.length > 0 && (
+        <div className="text-xs text-base-muted mt-4">
+          Catatan: Profil roast bisa berubah per batch. Tanyakan barista untuk rekomendasi seduh.
+        </div>
+      )}
     </motion.section>
   )
 }
 
 export default function CoffeePage() {
+  const { data: menuItems, loading: menuLoading, error: menuError, refetch: refetchMenu } = useMenu()
+  const { data: beans, loading: beansLoading, error: beansError, refetch: refetchBeans } = useBeans()
+
+  const menuByGroup = useMenuByGroup(menuItems || [])
+  const fadeUp = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } }
+
+  // Group display names
+  const groupNames: Record<MenuGroup, string> = {
+    'Signature': 'Signature',
+    'Espresso': 'Espresso Based',
+    'Manual': 'Manual Brew',
+    'NonCoffee': 'Non-Coffee'
+  }
+
+  if (menuLoading || beansLoading) {
+    return <LoadingCard text="Memuat menu kopi..." />
+  }
+
   return (
     <motion.div
       className="grid gap-6"
@@ -138,19 +163,58 @@ export default function CoffeePage() {
         </p>
       </motion.section>
 
-      {/* Grid menu */}
-      <div className="grid md:grid-cols-2 gap-6">
-        <Section title="Signature" items={signature} />
-        <Section title="Espresso Based" items={espresso} />
-        <Section title="Manual Brew" items={manualBrew} />
-        <Section title="Non-Coffee" items={nonCoffee} />
-      </div>
+      {/* Menu Error Handling */}
+      {menuError && (
+        <ErrorMessage error={menuError} onRetry={refetchMenu} />
+      )}
+
+      {/* Menu Grid */}
+      {menuItems && menuItems.length > 0 && (
+        <div className="grid md:grid-cols-2 gap-6">
+          {(['Signature', 'Espresso', 'Manual', 'NonCoffee'] as MenuGroup[]).map(group => {
+            const items = menuByGroup[group] || []
+            if (items.length === 0) return null
+            
+            return (
+              <MenuSection 
+                key={group}
+                title={groupNames[group]} 
+                items={items} 
+              />
+            )
+          })}
+        </div>
+      )}
+
+      {/* No Menu Items */}
+      {menuItems && menuItems.length === 0 && !menuError && (
+        <div className="card">Belum ada menu tersedia.</div>
+      )}
+
+      {/* Beans Error Handling */}
+      {beansError && (
+        <ErrorMessage error={beansError} onRetry={refetchBeans} />
+      )}
 
       {/* Line Up Beans */}
-      <BeansSection list={beans} />
+      {beans && beans.length > 0 && (
+        <BeansSection beans={beans} />
+      )}
+
+      {/* No Beans */}
+      {beans && beans.length === 0 && !beansError && (
+        <motion.div className="card" variants={fadeUp} transition={{ duration: 0.2 }}>
+          <h2 className="text-xl mb-2">Line Up Beans</h2>
+          <p className="text-base-muted text-sm">Belum ada beans tersedia.</p>
+        </motion.div>
+      )}
 
       {/* Note */}
-      <motion.div className="card text-sm text-base-muted" variants={fadeUp} transition={{ duration: 0.2 }}>
+      <motion.div 
+        className="card text-sm text-base-muted" 
+        variants={fadeUp} 
+        transition={{ duration: 0.2 }}
+      >
         Request gula/es/susu alternatif? Bilang di kasir. Kami anti rame, pro tenang.
       </motion.div>
     </motion.div>

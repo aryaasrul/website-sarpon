@@ -2,267 +2,393 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { 
+  useBooksAdmin, 
+  useEventsAdmin, 
+  useMenuAdmin, 
+  useBeansAdmin,
+  useBookMutations,
+  useEventMutations,
+  useMenuMutations,
+  useBeanMutations,
+  useRequireStaff,
+  useAuthActions
+} from '@/hooks'
+import LoadingSpinner, { LoadingCard, ErrorMessage } from '@/components/LoadingSpinner'
+import type { Book, Event, MenuItem, Bean } from '@/lib/types'
 
-type ID = string
+type Tab = 'Books' | 'Events' | 'Coffee Menu' | 'Beans'
 
-type Book = {
-  id: ID
-  title: string
-  author: string
-  category: string
-  price: string
-  cover_url?: string
-  description?: string
-}
-
-type EventItem = {
-  id: ID
-  title: string
-  date: string
-  location: string
-  is_online: boolean
-  rsvp_url?: string
-  cover?: string
-  desc?: string
-}
-
-type MenuItem = {
-  id: ID
-  name: string
-  desc?: string
-  price: string
-  badge?: string
-  group: 'Signature' | 'Espresso' | 'Manual' | 'NonCoffee'
-}
-
-type Bean = {
-  id: ID
-  name: string
-  origin: string
-  process?: string
-  notes: string
-  roast?: 'Light' | 'Light-Medium' | 'Medium' | 'Medium-Dark'
-  photo?: string
-}
-
-const KEY = {
-  books: 'tt_admin_books',
-  events: 'tt_admin_events',
-  menu: 'tt_admin_menu',
-  beans: 'tt_admin_beans',
-} as const
-
-const SEED_BOOKS: Book[] = [
-  { id: 'b1', title: 'Fiqh Islam', author: 'Sayyid Sabiq', category: 'Agama', price: 'Rp65.000', description: 'Kitab fiqh ringkas untuk santri.' },
-  { id: 'b2', title: 'Algoritma Dasar', author: 'A. Junaedi', category: 'Teknis', price: 'Rp78.000', description: 'Pengantar algoritma praktis.' },
-]
-
-const SEED_EVENTS: EventItem[] = [
-  { id: 'e1', title: 'Bedah Buku Kopi', date: new Date(Date.now()+7*86400000).toISOString(), location: 'Kedai Terang', is_online: false },
-  { id: 'e2', title: 'Ngopi & Ngoding', date: new Date(Date.now()+14*86400000).toISOString(), location: 'Online', is_online: true },
-]
-
-const SEED_MENU: MenuItem[] = [
-  { id:'m1', name:'Magic Coffee', price:'25K', badge:'Signature', group:'Signature' },
-  { id:'m2', name:'Latte', price:'24K', group:'Espresso' },
-]
-
-const SEED_BEANS: Bean[] = [
-  { id:'be1', name:'Gayo Atu Lintang', origin:'Aceh, Indonesia', process:'Washed', notes:'Cokelat, herbal', roast:'Medium' },
-  { id:'be2', name:'Kintamani Natural', origin:'Bali, Indonesia', process:'Natural', notes:'Red berries, gula aren', roast:'Light-Medium' },
-]
-
-function load<T>(k: string, fallback: T): T {
-  if (typeof window === 'undefined') return fallback
-  try { const raw = localStorage.getItem(k); return raw ? JSON.parse(raw) as T : fallback } catch { return fallback }
-}
-function save<T>(k: string, v: T) {
-  if (typeof window === 'undefined') return
-  localStorage.setItem(k, JSON.stringify(v))
-}
-
-function RowActions({ editHref, onDelete }: { editHref: string; onDelete: () => void }) {
+// Row Actions Component
+function RowActions({ 
+  editHref, 
+  onDelete, 
+  loading 
+}: { 
+  editHref: string
+  onDelete: () => void
+  loading?: boolean 
+}) {
   return (
     <div className="flex gap-2">
-      <Link href={editHref} className="btn">Edit</Link>
-      <button className="btn" onClick={onDelete}>Hapus</button>
+      <Link href={editHref} className="btn">
+        Edit
+      </Link>
+      <button 
+        className="btn" 
+        onClick={onDelete}
+        disabled={loading}
+      >
+        {loading ? <LoadingSpinner size="sm" text="" /> : 'Hapus'}
+      </button>
     </div>
   )
 }
 
-function ListTable({ headers, rows }: { headers: (string|JSX.Element)[]; rows: ( (string|JSX.Element)[] )[] }) {
+// List Table Component
+function ListTable({ 
+  headers, 
+  rows,
+  loading = false
+}: { 
+  headers: (string | JSX.Element)[]
+  rows: ((string | JSX.Element)[])[]
+  loading?: boolean
+}) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-base-muted border-b border-base-border">
-            {headers.map((h,i)=><th key={i} className="py-2 pr-4">{h}</th>)}
+            {headers.map((h, i) => (
+              <th key={i} className="py-2 pr-4">{h}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
-          {rows.length===0 ? (
-            <tr><td className="py-4 text-base-muted">Tidak ada data.</td></tr>
-          ) : rows.map((r,ri)=>(
-            <tr key={ri} className="border-b border-base-border/60">
-              {r.map((c,ci)=><td key={ci} className="py-2 pr-4 align-top">{c}</td>)}
+          {loading ? (
+            <tr>
+              <td colSpan={headers.length} className="py-8 text-center">
+                <LoadingSpinner size="md" text="Memuat data..." />
+              </td>
             </tr>
-          ))}
+          ) : rows.length === 0 ? (
+            <tr>
+              <td colSpan={headers.length} className="py-4 text-base-muted">
+                Tidak ada data.
+              </td>
+            </tr>
+          ) : (
+            rows.map((r, ri) => (
+              <tr key={ri} className="border-b border-base-border/60">
+                {r.map((c, ci) => (
+                  <td key={ci} className="py-2 pr-4 align-top">{c}</td>
+                ))}
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>
   )
 }
 
-type Tab = 'Books'|'Events'|'Coffee Menu'|'Beans'
-
 export default function AdminDashboard() {
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('Books')
+  
+  // Require staff authentication
+  const { user, loading: authLoading, isStaff } = useRequireStaff()
+  const { signOut, loading: signOutLoading } = useAuthActions()
 
-  useEffect(() => {
-    if (!localStorage.getItem('isAdmin')) router.replace('/admin/login')
-  }, [router])
+  // Data hooks
+  const { data: books, loading: booksLoading, error: booksError, refetch: refetchBooks } = useBooksAdmin()
+  const { data: events, loading: eventsLoading, error: eventsError, refetch: refetchEvents } = useEventsAdmin()
+  const { data: menu, loading: menuLoading, error: menuError, refetch: refetchMenu } = useMenuAdmin()
+  const { data: beans, loading: beansLoading, error: beansError, refetch: refetchBeans } = useBeansAdmin()
 
-  const [books, setBooks] = useState<Book[]>([])
-  const [events, setEvents] = useState<EventItem[]>([])
-  const [menu, setMenu] = useState<MenuItem[]>([])
-  const [beans, setBeans] = useState<Bean[]>([])
+  // Mutation hooks
+  const { deleteBook, loading: deletingBook } = useBookMutations()
+  const { deleteEvent, loading: deletingEvent } = useEventMutations()
+  const { deleteMenuItem, loading: deletingMenu } = useMenuMutations()
+  const { deleteBean, loading: deletingBean } = useBeanMutations()
 
-  useEffect(() => {
-    setBooks(load(KEY.books, SEED_BOOKS))
-    setEvents(load(KEY.events, SEED_EVENTS))
-    setMenu(load(KEY.menu, SEED_MENU))
-    setBeans(load(KEY.beans, SEED_BEANS))
-  }, [])
+  // Temporary auth check (will be replaced with proper auth)
+  if (authLoading) {
+    return <LoadingCard text="Checking authentication..." />
+  }
 
-  useEffect(() => { save(KEY.books, books) }, [books])
-  useEffect(() => { save(KEY.events, events) }, [events])
-  useEffect(() => { save(KEY.menu, menu) }, [menu])
-  useEffect(() => { save(KEY.beans, beans) }, [beans])
+  if (!user || !isStaff) {
+    return <LoadingCard text="Verifying permissions..." />
+  }
 
-  const count = useMemo(() => ({
-    books: books.length,
-    events: events.length,
-    menu: menu.length,
-    beans: beans.length,
-  }), [books, events, menu, beans])
+  // Handle logout
+  const handleLogout = async () => {
+    if (!confirm('Logout dari admin dashboard?')) return
+    
+    const result = await signOut()
+    if (result.success) {
+      router.push('/admin/login')
+    } else {
+      alert(`Error logging out: ${result.error}`)
+    }
+  }
+
+  // Format functions
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(price)
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString('id-ID', {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    })
+  }
+
+  // Delete handlers with confirmation
+  const handleDeleteBook = async (book: Book) => {
+    if (!confirm(`Hapus buku "${book.title}"?`)) return
+    const result = await deleteBook(book.id)
+    if (result.success) {
+      refetchBooks()
+    } else {
+      alert(`Error: ${result.error}`)
+    }
+  }
+
+  const handleDeleteEvent = async (event: Event) => {
+    if (!confirm(`Hapus event "${event.title}"?`)) return
+    const result = await deleteEvent(event.id)
+    if (result.success) {
+      refetchEvents()
+    } else {
+      alert(`Error: ${result.error}`)
+    }
+  }
+
+  const handleDeleteMenuItem = async (item: MenuItem) => {
+    if (!confirm(`Hapus menu "${item.name}"?`)) return
+    const result = await deleteMenuItem(item.id)
+    if (result.success) {
+      refetchMenu()
+    } else {
+      alert(`Error: ${result.error}`)
+    }
+  }
+
+  const handleDeleteBean = async (bean: Bean) => {
+    if (!confirm(`Hapus bean "${bean.name}"?`)) return
+    const result = await deleteBean(bean.id)
+    if (result.success) {
+      refetchBeans()
+    } else {
+      alert(`Error: ${result.error}`)
+    }
+  }
 
   return (
     <div className="grid gap-6">
+      {/* Header */}
       <header className="card">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-xl font-semibold">Admin (Dummy)</h1>
+          <div>
+            <h1 className="text-xl font-semibold">Admin Dashboard</h1>
+            {user && (
+              <p className="text-sm text-base-muted">
+                Welcome back, {user.email}
+              </p>
+            )}
+          </div>
           <div className="flex flex-wrap gap-2">
-            {(['Books','Events','Coffee Menu','Beans'] as Tab[]).map(t => (
+            {(['Books', 'Events', 'Coffee Menu', 'Beans'] as Tab[]).map(t => (
               <button
                 key={t}
-                className={`btn ${tab===t?'bg-white text-black':''}`}
-                onClick={()=>setTab(t)}
+                className={`btn ${tab === t ? 'bg-white text-black' : ''}`}
+                onClick={() => setTab(t)}
               >
                 {t}
               </button>
             ))}
             <button
-              className="btn bg-red-500 text-white"
-              onClick={() => {
-                localStorage.removeItem('isAdmin')
-                router.push('/admin/login')
-              }}
+              className="btn bg-red-500 text-white flex items-center gap-2"
+              onClick={handleLogout}
+              disabled={signOutLoading}
             >
-              Logout
+              {signOutLoading ? (
+                <>
+                  <LoadingSpinner size="sm" text="" />
+                  Logging out...
+                </>
+              ) : (
+                'Logout'
+              )}
             </button>
           </div>
         </div>
         <p className="text-base-muted text-sm mt-2">
-          *Versi dummy: data tersimpan di <code>localStorage</code>.
+          Kelola konten website dari dashboard ini.
         </p>
       </header>
 
-      {/* Books */}
+      {/* Books Tab */}
       {tab === 'Books' && (
         <section className="card">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-medium">Books <span className="badge">{count.books}</span></h2>
-            <Link href="/admin/form?type=book" className="btn">+ Tambah Buku</Link>
+            <h2 className="text-lg font-medium">
+              Books <span className="badge">{books?.length || 0}</span>
+            </h2>
+            <Link href="/admin/form?type=book" className="btn">
+              + Tambah Buku
+            </Link>
           </div>
+          
+          {booksError && <ErrorMessage error={booksError} onRetry={refetchBooks} />}
+          
           <ListTable
-            headers={['Judul','Penulis','Kategori','Harga','Aksi']}
-            rows={books.map(b => [
-              b.title, b.author, b.category, b.price,
+            headers={['Judul', 'Penulis', 'Kategori', 'Harga', 'Status', 'Aksi']}
+            loading={booksLoading}
+            rows={books?.map(book => [
+              book.title,
+              book.author,
+              book.category,
+              formatPrice(book.price),
+              book.is_published ? (
+                <span key="published" className="badge">Published</span>
+              ) : (
+                <span key="draft" className="badge">Draft</span>
+              ),
               <RowActions
-                key={b.id}
-                editHref={`/admin/form?type=book&id=${b.id}`}
-                onDelete={()=>setBooks(prev => prev.filter(x=>x.id!==b.id))}
+                key={book.id}
+                editHref={`/admin/form?type=book&id=${book.id}`}
+                onDelete={() => handleDeleteBook(book)}
+                loading={deletingBook}
               />
-            ])}
+            ]) || []}
           />
         </section>
       )}
 
-      {/* Events */}
+      {/* Events Tab */}
       {tab === 'Events' && (
         <section className="card">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-medium">Events <span className="badge">{count.events}</span></h2>
-            <Link href="/admin/form?type=event" className="btn">+ Tambah Event</Link>
+            <h2 className="text-lg font-medium">
+              Events <span className="badge">{events?.length || 0}</span>
+            </h2>
+            <Link href="/admin/form?type=event" className="btn">
+              + Tambah Event
+            </Link>
           </div>
+          
+          {eventsError && <ErrorMessage error={eventsError} onRetry={refetchEvents} />}
+          
           <ListTable
-            headers={['Judul','Waktu','Lokasi','Tipe','Aksi']}
-            rows={events.map(ev => [
-              ev.title,
-              new Date(ev.date).toLocaleString('id-ID',{ dateStyle:'medium', timeStyle:'short' }),
-              ev.location,
-              ev.is_online ? 'Online' : 'Offline',
+            headers={['Judul', 'Waktu', 'Lokasi', 'Tipe', 'Status', 'Aksi']}
+            loading={eventsLoading}
+            rows={events?.map(event => [
+              event.title,
+              formatDate(event.date),
+              event.location,
+              event.is_online ? 'Online' : 'Offline',
+              <div key="status" className="flex gap-1">
+                <span className="badge">{event.status}</span>
+                {event.is_published ? (
+                  <span className="badge">Published</span>
+                ) : (
+                  <span className="badge">Draft</span>
+                )}
+              </div>,
               <RowActions
-                key={ev.id}
-                editHref={`/admin/form?type=event&id=${ev.id}`}
-                onDelete={()=>setEvents(prev => prev.filter(x=>x.id!==ev.id))}
+                key={event.id}
+                editHref={`/admin/form?type=event&id=${event.id}`}
+                onDelete={() => handleDeleteEvent(event)}
+                loading={deletingEvent}
               />
-            ])}
+            ]) || []}
           />
         </section>
       )}
 
-      {/* Coffee Menu */}
+      {/* Coffee Menu Tab */}
       {tab === 'Coffee Menu' && (
         <section className="card">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-medium">Coffee Menu <span className="badge">{count.menu}</span></h2>
-            <Link href="/admin/form?type=menu" className="btn">+ Tambah Item</Link>
+            <h2 className="text-lg font-medium">
+              Coffee Menu <span className="badge">{menu?.length || 0}</span>
+            </h2>
+            <Link href="/admin/form?type=menu" className="btn">
+              + Tambah Item
+            </Link>
           </div>
+          
+          {menuError && <ErrorMessage error={menuError} onRetry={refetchMenu} />}
+          
           <ListTable
-            headers={['Nama','Grup','Harga','Badge','Aksi']}
-            rows={menu.map(m => [
-              m.name, m.group, m.price, m.badge ?? '-',
+            headers={['Nama', 'Grup', 'Harga', 'Badge', 'Status', 'Aksi']}
+            loading={menuLoading}
+            rows={menu?.map(item => [
+              item.name,
+              item.group,
+              formatPrice(item.price),
+              item.badge || '-',
+              item.is_available ? (
+                <span key="available" className="badge">Available</span>
+              ) : (
+                <span key="unavailable" className="badge">Unavailable</span>
+              ),
               <RowActions
-                key={m.id}
-                editHref={`/admin/form?type=menu&id=${m.id}`}
-                onDelete={()=>setMenu(prev => prev.filter(x=>x.id!==m.id))}
+                key={item.id}
+                editHref={`/admin/form?type=menu&id=${item.id}`}
+                onDelete={() => handleDeleteMenuItem(item)}
+                loading={deletingMenu}
               />
-            ])}
+            ]) || []}
           />
         </section>
       )}
 
-      {/* Beans */}
+      {/* Beans Tab */}
       {tab === 'Beans' && (
         <section className="card">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-medium">Line Up Beans <span className="badge">{count.beans}</span></h2>
-            <Link href="/admin/form?type=bean" className="btn">+ Tambah Bean</Link>
+            <h2 className="text-lg font-medium">
+              Line Up Beans <span className="badge">{beans?.length || 0}</span>
+            </h2>
+            <Link href="/admin/form?type=bean" className="btn">
+              + Tambah Bean
+            </Link>
           </div>
+          
+          {beansError && <ErrorMessage error={beansError} onRetry={refetchBeans} />}
+          
           <ListTable
-            headers={['Nama','Origin','Process','Roast','Aksi']}
-            rows={beans.map(b => [
-              b.name, b.origin, b.process ?? '-', b.roast ?? '-',
+            headers={['Nama', 'Origin', 'Process', 'Roast', 'Status', 'Aksi']}
+            loading={beansLoading}
+            rows={beans?.map(bean => [
+              bean.name,
+              bean.origin,
+              bean.process || '-',
+              bean.roast || '-',
+              bean.is_active ? (
+                <span key="active" className="badge">Active</span>
+              ) : (
+                <span key="inactive" className="badge">Inactive</span>
+              ),
               <RowActions
-                key={b.id}
-                editHref={`/admin/form?type=bean&id=${b.id}`}
-                onDelete={()=>setBeans(prev => prev.filter(x=>x.id!==b.id))}
+                key={bean.id}
+                editHref={`/admin/form?type=bean&id=${bean.id}`}
+                onDelete={() => handleDeleteBean(bean)}
+                loading={deletingBean}
               />
-            ])}
+            ]) || []}
           />
         </section>
       )}
