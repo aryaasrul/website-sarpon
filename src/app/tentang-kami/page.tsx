@@ -83,12 +83,14 @@ export default function TentangKamiPage() {
               transition={{ duration: 0.22, delay: i * 0.04 }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={t.photo}
-                alt={t.name}
-                className="w-full h-40 object-cover"
-                loading="lazy"
-              />
+              <div className="w-full aspect-[3/4] overflow-hidden bg-gradient-to-b from-orange-50/30 to-orange-100/30"> 
+                <img
+                    src={t.photo}
+                    alt={t.name}
+                    className="w-full h-full object-contain p-2"
+                    loading="lazy"
+                />
+              </div>  
               <div className="p-4">
                 <div className="font-medium">{t.name}</div>
                 <div className="text-sm text-base-muted">{t.role}</div>

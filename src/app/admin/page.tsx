@@ -1,6 +1,7 @@
 // src/app/admin/page.tsx
 'use client'
 
+import React from 'react'
 import Link from 'next/link'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -53,8 +54,8 @@ function ListTable({
   rows,
   loading = false
 }: { 
-  headers: (string | JSX.Element)[]
-  rows: ((string | JSX.Element)[])[]
+  headers: (string | React.ReactNode)[]
+  rows: ((string | React.ReactNode)[])[]
   loading?: boolean
 }) {
   return (

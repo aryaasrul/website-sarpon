@@ -1,7 +1,7 @@
 // src/app/admin/form/page.tsx
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { AnimatePresence } from 'framer-motion'
 import { 
@@ -16,7 +16,7 @@ import {
   useUpload,
   useRequireStaff
 } from '@/hooks'
-import LoadingSpinner, { LoadingCard, LoadingOverlay, ErrorMessage } from '@/components/LoadingSpinner'
+import { LoadingCard, LoadingOverlay } from '@/components/LoadingSpinner'
 import type { 
   BookInput, 
   EventInput, 
@@ -107,7 +107,8 @@ function ImageUpload({
   )
 }
 
-export default function AdminFormPage() {
+// Component yang menggunakan useSearchParams
+function AdminFormContent() {
   const router = useRouter()
   const sp = useSearchParams()
   const type = (sp.get('type') || '') as FormType
@@ -137,7 +138,7 @@ export default function AdminFormPage() {
   const { createBean, updateBean, loading: beanMutating } = useBeanMutations()
 
   // Form state
-  const [formData, setFormData] = useState<any>(null)
+  const [formData, setFormData] = useState<Record<string, any> | null>(null)
 
   // Initialize form data
   useEffect(() => {
@@ -217,7 +218,7 @@ export default function AdminFormPage() {
     e.preventDefault()
     if (!formData) return
 
-    let result: any = null
+    let result: Record<string, any> | null = null
 
     try {
       switch (type) {
@@ -318,58 +319,56 @@ export default function AdminFormPage() {
     const action = id ? 'Edit' : 'Tambah'
     const entityName = type === 'book' ? 'Buku' : 
                       type === 'event' ? 'Event' : 
-                      type === 'menu' ? 'Menu Item' : 'Bean'
+                      type === 'menu' ? 'Menu' : 'Bean'
     return `${action} ${entityName}`
   }
 
   return (
-    <div className="container py-8 relative">
-      <h1 className="text-2xl font-semibold mb-6">{getFormTitle()}</h1>
+    <div className="container py-8">
+      <form className="card max-w-2xl mx-auto" onSubmit={handleSubmit}>
+        <h1 className="text-xl font-medium mb-6">{getFormTitle()}</h1>
 
-      <form className="card grid gap-4" onSubmit={handleSubmit}>
         {/* BOOK FORM */}
-        {type === 'book' && (
+        {type === 'book' && formData && (
           <>
-            <div className="grid md:grid-cols-2 gap-4">
-              <Field label="Judul" required>
-                <input
-                  className="input"
-                  value={formData.title}
-                  onChange={e => setFormData({...formData, title: e.target.value})}
-                  required
-                />
-              </Field>
-              <Field label="Penulis" required>
-                <input
-                  className="input"
-                  value={formData.author}
-                  onChange={e => setFormData({...formData, author: e.target.value})}
-                  required
-                />
-              </Field>
-            </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <Field label="Kategori" required>
-                <input
-                  className="input"
-                  value={formData.category}
-                  onChange={e => setFormData({...formData, category: e.target.value})}
-                  required
-                />
-              </Field>
-              <Field label="Harga" required>
-                <input
-                  className="input"
-                  type="number"
-                  min="0"
-                  step="1000"
-                  value={formData.price}
-                  onChange={e => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
-                  required
-                />
-              </Field>
-            </div>
-            <Field label="Cover Image">
+            <Field label="Judul" required>
+              <input
+                className="input"
+                value={formData.title || ''}
+                onChange={e => setFormData({...formData, title: e.target.value})}
+                placeholder="Masukkan judul buku"
+                disabled={isMutating}
+              />
+            </Field>
+            <Field label="Penulis" required>
+              <input
+                className="input"
+                value={formData.author || ''}
+                onChange={e => setFormData({...formData, author: e.target.value})}
+                placeholder="Nama penulis"
+                disabled={isMutating}
+              />
+            </Field>
+            <Field label="Kategori" required>
+              <input
+                className="input"
+                value={formData.category || ''}
+                onChange={e => setFormData({...formData, category: e.target.value})}
+                placeholder="Kategori buku"
+                disabled={isMutating}
+              />
+            </Field>
+            <Field label="Harga" required>
+              <input
+                type="number"
+                className="input"
+                value={formData.price || 0}
+                onChange={e => setFormData({...formData, price: Number(e.target.value)})}
+                min="0"
+                disabled={isMutating}
+              />
+            </Field>
+            <Field label="Cover">
               <ImageUpload
                 bucket="books"
                 currentUrl={formData.cover_url}
@@ -379,10 +378,11 @@ export default function AdminFormPage() {
             </Field>
             <Field label="Deskripsi">
               <textarea
-                className="input"
-                rows={4}
+                className="input min-h-20"
                 value={formData.description || ''}
                 onChange={e => setFormData({...formData, description: e.target.value})}
+                placeholder="Deskripsi buku (opsional)"
+                disabled={isMutating}
               />
             </Field>
             <Field label="Status">
@@ -399,68 +399,56 @@ export default function AdminFormPage() {
         )}
 
         {/* EVENT FORM */}
-        {type === 'event' && (
+        {type === 'event' && formData && (
           <>
             <Field label="Judul Event" required>
               <input
                 className="input"
-                value={formData.title}
+                value={formData.title || ''}
                 onChange={e => setFormData({...formData, title: e.target.value})}
-                required
+                placeholder="Nama event"
+                disabled={isMutating}
               />
             </Field>
-            <div className="grid md:grid-cols-2 gap-4">
-              <Field label="Waktu" required>
-                <input
-                  className="input"
-                  type="datetime-local"
-                  value={toLocalInputValue(formData.date)}
-                  onChange={e => setFormData({...formData, date: new Date(e.target.value).toISOString()})}
-                  required
-                />
-              </Field>
-              <Field label="Lokasi" required>
-                <input
-                  className="input"
-                  value={formData.location}
-                  onChange={e => setFormData({...formData, location: e.target.value})}
-                  required
-                />
-              </Field>
-            </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <Field label="Tipe">
-                <select
-                  className="input"
-                  value={formData.is_online ? 'online' : 'offline'}
-                  onChange={e => setFormData({...formData, is_online: e.target.value === 'online'})}
-                >
-                  <option value="offline">Offline</option>
-                  <option value="online">Online</option>
-                </select>
-              </Field>
-              <Field label="Status">
-                <select
-                  className="input"
-                  value={formData.status}
-                  onChange={e => setFormData({...formData, status: e.target.value})}
-                >
-                  <option value="scheduled">Scheduled</option>
-                  <option value="cancelled">Cancelled</option>
-                  <option value="completed">Completed</option>
-                </select>
-              </Field>
-            </div>
-            <Field label="RSVP URL">
+            <Field label="Waktu" required>
+              <input
+                type="datetime-local"
+                className="input"
+                value={toLocalInputValue(formData.date)}
+                onChange={e => setFormData({...formData, date: new Date(e.target.value).toISOString()})}
+                disabled={isMutating}
+              />
+            </Field>
+            <Field label="Lokasi" required>
               <input
                 className="input"
-                type="url"
-                value={formData.rsvp_url || ''}
-                onChange={e => setFormData({...formData, rsvp_url: e.target.value})}
-                placeholder="https://..."
+                value={formData.location || ''}
+                onChange={e => setFormData({...formData, location: e.target.value})}
+                placeholder="Lokasi event"
+                disabled={isMutating}
               />
             </Field>
-            <Field label="Cover Image">
+            <Field label="Tipe">
+              <select
+                className="input"
+                value={formData.is_online ? 'online' : 'offline'}
+                onChange={e => setFormData({...formData, is_online: e.target.value === 'online'})}
+              >
+                <option value="offline">Offline</option>
+                <option value="online">Online</option>
+              </select>
+            </Field>
+            <Field label="RSVP URL">
+              <input
+                type="url"
+                className="input"
+                value={formData.rsvp_url || ''}
+                onChange={e => setFormData({...formData, rsvp_url: e.target.value})}
+                placeholder="Link pendaftaran (opsional)"
+                disabled={isMutating}
+              />
+            </Field>
+            <Field label="Cover Event">
               <ImageUpload
                 bucket="events"
                 currentUrl={formData.cover_url}
@@ -470,13 +458,25 @@ export default function AdminFormPage() {
             </Field>
             <Field label="Deskripsi">
               <textarea
-                className="input"
-                rows={4}
+                className="input min-h-20"
                 value={formData.description || ''}
                 onChange={e => setFormData({...formData, description: e.target.value})}
+                placeholder="Deskripsi event"
+                disabled={isMutating}
               />
             </Field>
-            <Field label="Publish Status">
+            <Field label="Status Event">
+              <select
+                className="input"
+                value={formData.status}
+                onChange={e => setFormData({...formData, status: e.target.value})}
+              >
+                <option value="scheduled">Scheduled</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="completed">Completed</option>
+              </select>
+            </Field>
+            <Field label="Status Publikasi">
               <select
                 className="input"
                 value={formData.is_published ? 'published' : 'draft'}
@@ -490,67 +490,58 @@ export default function AdminFormPage() {
         )}
 
         {/* MENU FORM */}
-        {type === 'menu' && (
+        {type === 'menu' && formData && (
           <>
             <Field label="Nama Menu" required>
               <input
                 className="input"
-                value={formData.name}
+                value={formData.name || ''}
                 onChange={e => setFormData({...formData, name: e.target.value})}
-                required
+                placeholder="Nama menu"
+                disabled={isMutating}
               />
             </Field>
-            <div className="grid md:grid-cols-3 gap-4">
-              <Field label="Grup" required>
-                <select
-                  className="input"
-                  value={formData.group}
-                  onChange={e => setFormData({...formData, group: e.target.value})}
-                >
-                  <option value="Signature">Signature</option>
-                  <option value="Espresso">Espresso</option>
-                  <option value="Manual">Manual</option>
-                  <option value="NonCoffee">Non-Coffee</option>
-                </select>
-              </Field>
-              <Field label="Harga" required>
-                <input
-                  className="input"
-                  type="number"
-                  min="0"
-                  step="1000"
-                  value={formData.price}
-                  onChange={e => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
-                  required
-                />
-              </Field>
-              <Field label="Sort Order">
-                <input
-                  className="input"
-                  type="number"
-                  min="0"
-                  value={formData.sort_order}
-                  onChange={e => setFormData({...formData, sort_order: parseInt(e.target.value) || 0})}
-                />
-              </Field>
-            </div>
-            <Field label="Badge (opsional)">
+            <Field label="Grup Menu" required>
+              <select
+                className="input"
+                value={formData.group}
+                onChange={e => setFormData({...formData, group: e.target.value})}
+              >
+                <option value="Signature">Signature</option>
+                <option value="Espresso">Espresso</option>
+                <option value="Manual">Manual</option>
+                <option value="NonCoffee">Non Coffee</option>
+              </select>
+            </Field>
+            <Field label="Harga" required>
+              <input
+                type="number"
+                className="input"
+                value={formData.price || 0}
+                onChange={e => setFormData({...formData, price: Number(e.target.value)})}
+                min="0"
+                disabled={isMutating}
+              />
+            </Field>
+            <Field label="Badge">
               <input
                 className="input"
                 value={formData.badge || ''}
                 onChange={e => setFormData({...formData, badge: e.target.value})}
-                placeholder="Signature, Seasonal, etc."
+                placeholder="Badge (New, Popular, dll)"
+                disabled={isMutating}
               />
             </Field>
             <Field label="Deskripsi">
               <textarea
-                className="input"
-                rows={3}
+                className="input min-h-20"
                 value={formData.description || ''}
                 onChange={e => setFormData({...formData, description: e.target.value})}
+                placeholder="Deskripsi menu"
+                disabled={isMutating}
               />
             </Field>
-            <Field label="Availability">
+            <Field label="Ketersediaan">
               <select
                 className="input"
                 value={formData.is_available ? 'available' : 'unavailable'}
@@ -560,59 +551,69 @@ export default function AdminFormPage() {
                 <option value="unavailable">Unavailable</option>
               </select>
             </Field>
+            <Field label="Urutan Tampil">
+              <input
+                type="number"
+                className="input"
+                value={formData.sort_order || 0}
+                onChange={e => setFormData({...formData, sort_order: Number(e.target.value)})}
+                min="0"
+                disabled={isMutating}
+              />
+            </Field>
           </>
         )}
 
         {/* BEAN FORM */}
-        {type === 'bean' && (
+        {type === 'bean' && formData && (
           <>
             <Field label="Nama Bean" required>
               <input
                 className="input"
-                value={formData.name}
+                value={formData.name || ''}
                 onChange={e => setFormData({...formData, name: e.target.value})}
-                required
+                placeholder="Nama bean"
+                disabled={isMutating}
               />
             </Field>
-            <div className="grid md:grid-cols-2 gap-4">
-              <Field label="Origin" required>
-                <input
-                  className="input"
-                  value={formData.origin}
-                  onChange={e => setFormData({...formData, origin: e.target.value})}
-                  required
-                />
-              </Field>
-              <Field label="Process">
-                <input
-                  className="input"
-                  value={formData.process || ''}
-                  onChange={e => setFormData({...formData, process: e.target.value})}
-                  placeholder="Washed, Natural, Honey, etc."
-                />
-              </Field>
-            </div>
+            <Field label="Origin" required>
+              <input
+                className="input"
+                value={formData.origin || ''}
+                onChange={e => setFormData({...formData, origin: e.target.value})}
+                placeholder="Asal bean"
+                disabled={isMutating}
+              />
+            </Field>
+            <Field label="Process">
+              <input
+                className="input"
+                value={formData.process || ''}
+                onChange={e => setFormData({...formData, process: e.target.value})}
+                placeholder="Proses pengolahan"
+                disabled={isMutating}
+              />
+            </Field>
             <Field label="Roast Level">
               <select
                 className="input"
                 value={formData.roast || ''}
                 onChange={e => setFormData({...formData, roast: e.target.value || null})}
               >
-                <option value="">— Pilih Roast —</option>
+                <option value="">Pilih roast level</option>
                 <option value="Light">Light</option>
                 <option value="Light-Medium">Light-Medium</option>
                 <option value="Medium">Medium</option>
                 <option value="Medium-Dark">Medium-Dark</option>
               </select>
             </Field>
-            <Field label="Catatan Rasa" required>
+            <Field label="Notes" required>
               <textarea
-                className="input"
-                rows={3}
-                value={formData.notes}
+                className="input min-h-20"
+                value={formData.notes || ''}
                 onChange={e => setFormData({...formData, notes: e.target.value})}
-                required
-                placeholder="Cokelat, herbal, citrus, floral, etc."
+                placeholder="Catatan rasa"
+                disabled={isMutating}
               />
             </Field>
             <Field label="Foto Bean">
@@ -663,5 +664,33 @@ export default function AdminFormPage() {
         )}
       </AnimatePresence>
     </div>
+  )
+}
+
+// Loading component untuk Suspense fallback
+function FormLoading() {
+  return (
+    <div className="container py-8">
+      <div className="card max-w-2xl mx-auto">
+        <div className="animate-pulse">
+          <div className="h-6 bg-base-border rounded w-1/4 mb-6"></div>
+          <div className="space-y-4">
+            <div className="h-10 bg-base-border rounded"></div>
+            <div className="h-10 bg-base-border rounded"></div>
+            <div className="h-10 bg-base-border rounded"></div>
+            <div className="h-20 bg-base-border rounded"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Main export dengan Suspense wrapper
+export default function AdminFormPage() {
+  return (
+    <Suspense fallback={<FormLoading />}>
+      <AdminFormContent />
+    </Suspense>
   )
 }

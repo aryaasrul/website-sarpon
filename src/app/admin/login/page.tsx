@@ -124,18 +124,7 @@ export default function AdminLogin() {
             </button>
           </form>
 
-          <div className="mt-6 pt-4 border-t border-base-border">
-            <div className="text-xs text-base-muted text-center">
-              <p className="mb-2">Demo Credentials:</p>
-              <div className="grid gap-1 text-left bg-base-border/20 rounded p-2">
-                <p><strong>Email:</strong> admin@tokoterang.id</p>
-                <p><strong>Password:</strong> admin123</p>
-              </div>
-              <p className="mt-2">
-                *Gunakan credentials di atas untuk testing
-              </p>
-            </div>
-          </div>
+    
 
           <div className="mt-4 text-center">
             <button
